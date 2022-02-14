@@ -4,6 +4,11 @@
 //    There can only be one owner at a time.
 //    When the owner goes out of scope, the value will be dropped.
 
+// Reference axioms
+//
+//    At any given time, you can have either one mutable reference or any number of immutable references.
+//    References must always be valid.
+
 fn main() {
     println!("4.1 What is ownership?");
     what_is_ownership();
@@ -163,4 +168,74 @@ fn dangle_not() -> String {
 
 // ----------------------------------------------------------------
 
-fn the_slice_type() {}
+// https://doc.rust-lang.org/stable/book/ch04-03-slices.html
+
+fn the_slice_type() {
+    let s = String::from("hello world");
+
+    // reference subsets of the string, "slices"
+    // slices are nicely half-open, excluding the "end" value
+    let hello = &s[0..5]; // {0,1,2,3,4}
+    let world = &s[6..11];
+    println!("hello/world {} {}", hello, world);
+
+    // syntax sugar for 0-indexed slices
+    let hello_sugar = &[..5];
+    // syntax sugar for slice to end of string
+    let world_sugar = &[6..];
+    // syntax sugar for whole string
+    let hello_world = [..];
+
+    // let's find the first word
+    let fw = first_word_of_String(&s); // this is an immutable borrow
+    println!("First word: {}", fw);
+
+    // now we have a slice of s
+    // thus, we cannot make a "mutable borrow" of s
+    // since it would possibly invalidate the slice
+
+    // E.g. this mutable borrow is not possible:
+    // s.clear();
+    println!("First word of String: {}", fw);
+
+    // string literals (str) are slices (immutable references)
+    let foobar = "foo bar";
+    // foobar has type &str, an immutable reference
+
+    let fw = first_word_of_str_slice(foobar);
+    println!("First word of literal &str: {}", fw);
+
+    let fw = first_word_of_str_slice(&s);
+    println!("First word of literal &String: {}", fw);
+
+    // We can slice other types, too
+    let a = [1, 2, 3, 4, 5];
+    let slice = &a[1..3];
+    // this slice has type &[i32]
+    // it should match the array [2,3]
+    assert_eq!(slice, &[2, 3]);
+}
+
+fn first_word_of_String(s: &String) -> &str {
+    let bytes = s.as_bytes();
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return &s[0..i];
+        }
+    }
+    // no spaces
+    &s[..]
+}
+
+// by changing from &String to &str we take a string slice as input
+// this way the function accepts both &Strings and string literals (&str).
+fn first_word_of_str_slice(s: &str) -> &str {
+    let bytes = s.as_bytes();
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return &s[0..i];
+        }
+    }
+    // no spaces
+    &s[..]
+}
