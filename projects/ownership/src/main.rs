@@ -24,7 +24,7 @@ fn main() {
 
 fn what_is_ownership() {
     let mut s = String::from("hello"); // string builder, mutable
-    s.push_str(", worldx!"); // append
+    s.push_str(", world!"); // append
     println!("{}", s);
     // s is automatically freed when it goes out of scope
 
