@@ -82,9 +82,11 @@ fn main() {
     struct AlwaysEqual;
     let _subject = AlwaysEqual;
 
-
     // Structs in practice
-    let rect1 = Rectangle {width: 10, height: 20};
+    let rect1 = Rectangle {
+        width: 10,
+        height: 20,
+    };
     println!("Area of the rectangle: {}", area(&rect1));
 
     // ToString:
@@ -95,11 +97,42 @@ fn main() {
     // Print using the Debug format specifier
     // when we add this with the #[derive(Debug)] macro on the struct
     // declaration it will make the struct printable
-    let pr = PrintableRectangle {width: 10, height: 20};
+    let pr = PrintableRectangle {
+        width: 10,
+        height: 20,
+    };
     println!("Rect: {:?}", pr);
-    
+
     // we may also use the dbg! macro to print file/linenumber info and the value:
     dbg!(&pr);
+
+    // below we have added an "impl" area function to the
+    // Rectangle struct namespace
+    // we can now call it like a member method
+
+    // this is called a "method syntax" function call
+    println!("rectangle.area(): {}", rect1.area());
+
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+    let rect2 = Rectangle {
+        width: 10,
+        height: 40,
+    };
+    let rect3 = Rectangle {
+        width: 60,
+        height: 45,
+    };
+
+    println!("Can rect1 hold rect2? {}", rect1.can_hold(&rect2));
+    println!("Can rect1 hold rect3? {}", rect1.can_hold(&rect3));
+
+    // lets create a square rectangle with the "static" factory method
+    // this has a different syntax
+    let r = Rectangle::square(42);
+    println!("Square area: {}", r.area());
 }
 
 // a builder function, convention: match parameter and field names
@@ -122,8 +155,43 @@ fn area(r: &Rectangle) -> u32 {
 }
 
 // This macro adds the Debug trait to the struct, making it printable with the :? formatter
+//     println!("Rect: {:?}", pr);
+// And with the debug printer:
+//     dbg!(&pr);
 #[derive(Debug)]
 struct PrintableRectangle {
     width: u32,
     height: u32,
+}
+
+// we may add functions to the namespace of the struct like this
+// impl declares an implementation block for Rectangle
+//
+// the functions in that block are called "associated functions" of the Rectangle
+// they are not required to take an instance: you just omit the first parameter self reference
+impl Rectangle {
+    // this is kind of pythonic with a self parameter
+    // self is a syntactic sugar short-hand for &self:Self
+    fn area(&self) -> u32 {
+        // this will borrow self immutably (since we use the borrow operator &, &self)
+        // Taking ownership (self) and borrowing mutably (&mut self) is also possible
+        self.width * self.height
+    }
+    fn can_hold(&self, other: &Rectangle) -> bool {
+        self.width > other.width && self.height > other.height
+    }
+}
+
+// impl blocks for a type will be combined by the compiler, so we may break 
+// them into multiple blocks if we like:
+impl Rectangle {
+    // a factory method does not take an instance, so it has no self reference
+    // BTW, this is a patological example since a square rectangle has
+    // rectangle semantics but in many cases the better model would give it Square semantics.
+    fn square(size: u32) -> Rectangle {
+        Rectangle {
+            width: size,
+            height: size,
+        }
+    }
 }
