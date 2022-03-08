@@ -22,7 +22,7 @@ fn largest_non_generic_char(list: &[char]) -> char {
     largest
 }
 
-// Any type T with a partial ordering trait 
+// Any type T with a partial ordering trait
 // and the Copy trait so we can move the value out of the list
 fn largest_generic<T: std::cmp::PartialOrd + Copy>(list: &[T]) -> T {
     let mut largest = list[0];
@@ -115,7 +115,13 @@ fn main() {
     // the compiler performs monomorphisation, binding the concrete types at compile-time
 
     traits();
-}
+
+    lifetimes();
+
+    everything_longest_with_an_announcement("Hello, world", "foo bar baz", "Big announcement!");
+ }
+
+
 
 // Let's define some traits
 // See https://doc.rust-lang.org/stable/book/ch10-02-traits.html
@@ -176,10 +182,13 @@ use std::fmt;
 impl fmt::Display for Tweet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Use `self.number` to refer to each positional data point.
-        write!(f, "@{}: {}, reply:{}, RT:{}", self.username, self.content, self.reply, self.retweet)
+        write!(
+            f,
+            "@{}: {}, reply:{}, RT:{}",
+            self.username, self.content, self.reply, self.retweet
+        )
     }
 }
-
 
 // use plus to require multiple traits
 pub fn notify_multiple_traits(item: &(impl Summary + fmt::Display)) {
@@ -191,14 +200,16 @@ pub fn notify_multiple_traits_generic<T>(item: &T)
 where
     T: Summary + fmt::Display,
 {
-    println!("Multiple traits with where: {} / {}", item.summarize(), item);
+    println!(
+        "Multiple traits with where: {} / {}",
+        item.summarize(),
+        item
+    );
 }
 
-fn coerce_to_summary<T: Summary>(item:&T) -> &impl Summary 
-{
+fn coerce_to_summary<T: Summary>(item: &T) -> &impl Summary {
     item
 }
-
 
 struct Pair<T> {
     x: T,
@@ -257,7 +268,6 @@ fn traits() {
     let summarizable = coerce_to_summary(&tweet);
     println!("Summarizable: {}", summarizable.summarize());
 
-
     // trait fits in a vector with a little twis
     // vectors are of things that have a size, a trait does not
     // but we can box it, and the boxes have a size so we can put them in a list
@@ -270,6 +280,103 @@ fn traits() {
     let max = largest_generic(&char_list);
     println!("The largest char is {}", max);
 
-    let p:Pair<i32> = Pair::new(1, 2);
+    let p: Pair<i32> = Pair::new(1, 2);
     p.cmp_display(); // prints: The largest member is y = 2
 }
+
+
+
+// See https://doc.rust-lang.org/stable/book/ch10-03-lifetime-syntax.html
+
+
+// we must declare the lifetime of the result since it is dependent on the x or y lifetime
+// lifetimes begin with apostrophe: the 'a parameter relates the life time of the parameters
+// note that is is a generic parameter as well.
+// this declares that x and y has the same lifetime (at least 'a), and the result the same as these
+// this does not change the lifetime, it just informs the borrow checker of the requirements
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+
+struct ImportantExcerpt<'a> {
+    part: &'a str,
+}
+
+impl<'a> ImportantExcerpt<'a> {
+    // lifetime is implied: when there is only one lifetime parameter it is applied to all parameters
+    fn level(&self) -> i32 {
+        3
+    }
+
+    // The third rule is if there are multiple input lifetime parameters, but one of them is &self or &mut self because this is a method, the lifetime of self is assigned to all output lifetime parameters. 
+    // This  lifetime rule applies here
+    fn announce_and_return_part(&self, announcement: &str) -> &str {
+        println!("Attention please: {}", announcement);
+        self.part
+    }
+}
+
+fn lifetimes() {
+    let string1 = String::from("abcd");
+    let string2 = "xyz";
+
+    // both strings have the same lifetime, the result same
+    let result = longest(string1.as_str(), string2);
+    println!("The longest string is {}", result);
+
+
+    // strings have different lifetimes
+    let string1 = String::from("long string is long");
+    {
+        // string2 is shortest lived, so the result has
+        // the same lifetime as string2
+        let string2 = String::from("xyz");
+        let result = longest(string1.as_str(), string2.as_str());
+        println!("The longest string is {}", result);
+        // result lifetime ends here, when string2 ends
+    }
+
+    // lifetimes in structs
+    let novel = String::from("Call me Ishmael. Some years ago...");
+    let first_sentence = novel.split('.').next().expect("Could not find a '.'");
+    let i = ImportantExcerpt {
+        part: first_sentence,
+    };
+    // part now has the lifetime of first_sentence
+    println!("Excerpt: {}", i.part);
+
+    // lifetimes in methods
+    println!("Level = {}", i.level());
+    let _ = i.announce_and_return_part(&novel);
+
+
+    // static lifetime
+    let s: &'static str = "I have a static lifetime";
+    println!("Static lifetime: {}", s);
+}
+
+
+// the following declaration includes everything from this chapter:
+
+use std::fmt::Display;
+
+fn everything_longest_with_an_announcement<'a, T>(
+    x: &'a str,
+    y: &'a str,
+    ann: T,
+) -> &'a str
+where
+    T: Display,
+{
+    println!("Announcement! {}", ann);
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+
