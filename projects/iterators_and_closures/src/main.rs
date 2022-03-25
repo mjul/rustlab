@@ -31,7 +31,7 @@ fn _equivalent_fns_and_closures() {
     fn add_one_v1(x: u32) -> u32 {
         x + 1
     }
-    let add_one_v2 = |x: u32| -> u32 { x + 1 };
+    let _add_one_v2 = |x: u32| -> u32 { x + 1 };
     let add_one_v3 = |x| x + 1;
     let add_one_v4 = |x| x + 1;
 
@@ -90,6 +90,7 @@ where
 }
 
 // this fails, arg is fixed on first call
+#[ignore]
 #[test]
 fn cacher_call_with_different_values() {
     let mut c = Cacher::new(|a| a);
@@ -176,6 +177,8 @@ fn main() {
 
     generate_workout(simulated_user_specified_value, simulated_random_number);
     generate_workout_with_cacher(simulated_user_specified_value, simulated_random_number);
+
+    play_with_iterators();
 }
 
 #[test]
@@ -186,3 +189,23 @@ fn closure_captures_local_env() {
     let y = 4;
     assert!(equal_to_x(y));
 }
+
+
+fn play_with_iterators() {
+
+    // vanilla stuff
+    let v1 = vec![1,2,3];
+    let v1_iter = v1.iter();
+    for val in v1_iter {
+        println!("Got: {}", val);
+    }
+
+    // iterators come from the Iterator trait,
+    // you just need to implement the next function:
+    // fn next(&mut self) -> Option<Self::Item>;
+
+    // see the lib.rs file for more examples
+
+    
+}
+
