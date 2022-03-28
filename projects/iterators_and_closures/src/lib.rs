@@ -1,3 +1,5 @@
+use std::env;
+
 #[test]
 fn iterator_demonstration() {
     let v1 = vec![1, 2, 3];
@@ -120,8 +122,7 @@ fn counter_tests() {
     assert_eq!(vec![1, 2, 3, 4, 5], actual);
 }
 
-
-// the standard library has a bunch of iterator-related traits 
+// the standard library has a bunch of iterator-related traits
 // these are pretty vanilla
 #[test]
 fn using_other_iterator_trait_methods() {
@@ -131,4 +132,96 @@ fn using_other_iterator_trait_methods() {
         .filter(|x| x % 3 == 0)
         .sum();
     assert_eq!(18, sum);
+}
+
+// From chapter 12
+pub struct ConfigWithClone {
+    pub query: String,
+    pub filename: String,
+    pub case_sensitive: bool,
+}
+impl ConfigWithClone {
+    pub fn new(args: &[String]) -> Result<ConfigWithClone, &'static str> {
+        if args.len() < 3 {
+            return Err("not enough arguments");
+        }
+
+        // we want to avoid these .clone calls:
+        let query = args[1].clone();
+        let filename = args[2].clone();
+
+        let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
+
+        Ok(ConfigWithClone {
+            query,
+            filename,
+            case_sensitive,
+        })
+    }
+}
+
+// Let's avoid the cloning and use iterators over the args
+#[derive(Debug, PartialEq)]
+pub struct ConfigWithIterators {
+    pub query: String,
+    pub filename: String,
+    // simplified, no env
+}
+impl ConfigWithIterators
+{
+    // use the Args iterator
+    pub fn new<T>(mut args: T) -> Result<ConfigWithIterators, &'static str> 
+    where T: Iterator<Item=String>
+    {
+        let (c, q, f) = (args.next(), args.next(), args.next());
+        match (c, q, f) {
+            (_, Some(query), Some(filename)) => Ok(ConfigWithIterators { query, filename }),
+            (_, _, None) => Err("not enough arguments"),
+            _ => Err("this cannot happen."),
+        }
+    }
+}
+
+struct FakeArgs {
+    count: u32,
+}
+impl FakeArgs {
+    fn new() -> FakeArgs {
+        FakeArgs { count: 0 }
+    }
+}
+impl Iterator for FakeArgs {
+    type Item = String;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.count += 1;
+        match self.count {
+            1 => Some(String::from("minigrep")),
+            2 => Some(String::from("query")),
+            3 => Some(String::from("filename.txt")),
+            _ => None,
+        }
+    }
+}
+
+#[test]
+fn fake_args() {
+    let mut a = FakeArgs::new();
+    assert_eq!(String::from("minigrep"), a.next().unwrap());
+    assert_eq!(Some(String::from("query")), a.next());
+
+    for x in FakeArgs::new() {
+        println!("FakeArgs: {:?}", x);
+    }
+}
+
+#[test]
+fn config_with_iterators() {
+    let args = FakeArgs::new();
+
+    let config = ConfigWithIterators::new(args).expect("argument parse error");
+    let expected = ConfigWithIterators {
+        query: String::from("query"),
+        filename: String::from("filename.txt"),
+    };
+    assert_eq!(expected, config);
 }
