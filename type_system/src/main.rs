@@ -1,4 +1,4 @@
-mod one_way_associated_type_link;
+mod unidirectional_associated_type_link;
 
 fn main() {
     println!("Hello, world!");
