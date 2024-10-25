@@ -4,20 +4,22 @@
 //! identifier for one type of entity is not mistaken for an
 //! identifier for another type of object.
 //!
-//! The linking is from Entity to EntityId only.
-//! Here we use a new type for the ID and have to manually ensure that it is
-//! not used as ID for more than one Entity type.
+//! The linking is bidirectional between the Entity and the EntityId.
+//!
+//! This ensures that an ID type is not used for more than one Entity type.
 
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 /// An identifier for an [Entity].
 /// Identifiers are value types and implement the `Copy` trait.
-pub trait EntityId: Copy + Clone + Debug + PartialEq + Eq + Hash {}
+pub trait EntityId: Copy + Clone + Debug + PartialEq + Eq + Hash + Sized {
+    type EntityType: Entity;
+}
 
 /// A domain entity
 pub trait Entity {
-    type Id: EntityId;
+    type Id: EntityId<EntityType = Self>;
 
     /// Unique identifier for this entity.
     fn id(&self) -> Self::Id;
@@ -26,7 +28,9 @@ pub trait Entity {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct FooId(i64);
 
-impl EntityId for FooId {}
+impl EntityId for FooId {
+    type EntityType = Foo;
+}
 
 pub struct Foo {
     id: FooId,
