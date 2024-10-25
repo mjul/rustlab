@@ -13,3 +13,6 @@ Cargo.lock
 # Build outputs
 **/*.exe
 **/*.pdb
+
+# Ignore IDE configuration
+.idea
