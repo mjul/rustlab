@@ -7,7 +7,8 @@
 //! The linking is bidirectional between the Entity and the EntityId.
 //!
 //! This ensures that an ID type is not used for more than one Entity type.
-
+//!
+//! It is an improvement over [`namespace::crat`]
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
